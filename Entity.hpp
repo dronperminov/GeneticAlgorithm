@@ -9,6 +9,7 @@ const unsigned TwoM = 1 << M; // максимальное значение ге�
 
 std::mt19937 generator(time(0));
 std::uniform_int_distribution<unsigned> distribution(0, TwoM);
+std::uniform_real_distribution<double> realDistribution(0.0, 1.0);
 
 class Entity {
 	unsigned bits; // битовое представление особи
@@ -20,13 +21,17 @@ public:
 	void Score(double (*f)(double), double a, double b); // оценка приспособленности
 
 	void InverseBit(int index); // инверсия бита по индексу
-	bool GetBit(int index); // получение бита по индексу
+	bool GetBit(int index) const; // получение бита по индексу
 	void SetBit(int index, bool bit); // установка бита по индексу
 
 	friend std::ostream& operator<<(std::ostream& os, const Entity& entity); // вывод особи
 };
 
-unsigned GetRandom(unsigned maxValue = TwoM) {
+double GetRandom() {
+	return realDistribution(generator);
+}
+
+unsigned GetRandom(unsigned maxValue) {
 	return distribution(generator) % maxValue;
 }
 
@@ -36,7 +41,7 @@ unsigned GetRandom(unsigned minValue, unsigned maxValue) {
 
 // создание особи
 Entity::Entity() {
-	bits = GetRandom(); // генерируем случайные биты
+	bits = GetRandom(TwoM); // генерируем случайные биты
 	score = 0;
 }
 
@@ -57,7 +62,7 @@ void Entity::InverseBit(int index) {
 }
 
 // получение бита по индексу
-bool Entity::GetBit(int index) {
+bool Entity::GetBit(int index) const {
 	return (bits >> index) & 1;
 }
 
