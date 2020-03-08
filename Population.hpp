@@ -11,6 +11,7 @@
 class Population {
 	std::vector<Entity> entities; // вектор особей
 
+	std::vector<double> GetFitness(const Config& config); // расчёт фитнес функции в зависимости от оценочной функции
 	size_t RandomSelection(const Config& config); // случайный отбор
 	size_t TournamentSelection(const Config& config); // отбор турниром
 	size_t RoulleteSelection(const Config& config); // отбор рулеткой
@@ -63,6 +64,37 @@ Entity Population::GetBestEntity(const Config& config) const {
 			best = i;
 
 	return entities[best]; // возвращаем самую приспособленную особь
+}
+
+// расчёт фитнес функции в зависимости от оценочной функции
+std::vector<double> Population::GetFitness(const Config& config) {
+	std::vector<double> fitness(config.populationSize);
+
+	double minScore = entities[0].GetScore();
+	double maxScore = entities[0].GetScore();
+
+	// считаем минимальное и максимальное значение оценочной функции
+	for (size_t i = 1; i < config.populationSize; i++) {
+		double score = entities[i].GetScore();
+
+		if (score > maxScore)
+			maxScore = score;
+
+		if (score < minScore)
+			minScore = score;
+	}
+
+	// заполняем значение фитнесс функции
+	for (size_t i = 0; i < config.populationSize; i++) {
+		if (config.mode == "max") {
+			fitness[i] = (entities[i].GetScore() - minScore) / (maxScore - minScore);
+		}
+		else {
+			fitness[i] = (maxScore - entities[i].GetScore()) / (maxScore - minScore);
+		}
+	}
+
+	return fitness;
 }
 
 // случайный отбор
@@ -133,47 +165,38 @@ size_t Population::RoulleteSelection(const Config& config) {
 	if (config.debugSelection)
 		std::cout << "Roullete selection: " << std::endl;
 
-	double minValue, maxValue;
+	size_t parentsCount = config.populationSize * config.selectionPart;
+	std::vector<Entity> parents;
 
-	if (config.mode == "max") {
-		minValue = entities[config.populationSize - 1].GetScore();
-		maxValue = entities[0].GetScore();
-	}
-	else {
-		minValue = entities[0].GetScore();
-		maxValue = entities[config.populationSize - 1].GetScore();
-	}
-
-	double delta = maxValue - minValue;
+	std::vector<double> fitness = GetFitness(config);
 	double sum = 0;
 
 	// считаем нормализованную сумму оценки приспособленности
 	for (size_t i = 0; i < config.populationSize; i++)
-		sum += (entities[i].GetScore() - minValue) / delta;
+		sum += fitness[i];
 	
-	size_t j = 0;
-	double pi = 1;
-
 	// отбираем подходящие особи
-	for (size_t i = 0; i < config.populationSize; i++) {
-		if (config.debugSelection)
-			std::cout << "p(" << (i + 1) << ") = " << pi;
+	for (size_t i = 0; i < parentsCount; i++) {
+		double rnd = GetRandom();
+		double pi = 0;
+		size_t j = 0;
 
-		if (GetRandom() < pi) {
-			entities[j++] = entities[i];
-
-			if (config.debugSelection)
-				std::cout << " (selected)";
+		while (pi > rnd || rnd > pi + fitness[j] / sum) {
+			pi += fitness[j] / sum;
+			j++;
 		}
 
 		if (config.debugSelection)
-			std::cout << std::endl;
+			std::cout << " (selected " << j << "), probability: " << (fitness[j] / sum) << std::endl;
 
-		double score = (entities[i].GetScore() - minValue) / delta;
-		pi -= score / sum;
+		parents.push_back(entities[j]);
 	}
 
-	return j;
+	// помещаем родителей в начало
+	for (size_t i = config.preservedPositions; i < parentsCount; i++)
+		entities[i] = parents[i];
+
+	return parentsCount;
 }
 
 // отбор усечением
