@@ -41,8 +41,8 @@ void ReverseMutation(Entity &entity) {
 		bool bitj = entity.GetBit(j);
 
 		// проставляем биты в нужные места
-		entity.SetBit(biti, j);
-		entity.SetBit(bitj, i);
+		entity.SetBit(j, biti);
+		entity.SetBit(i, bitj);
 
 		// сдвигаем границы
 		i++;
