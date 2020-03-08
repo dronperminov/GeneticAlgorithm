@@ -1,0 +1,19 @@
+mode = max # режим поиска
+left_border = 1 # левая граница
+right_border = 9 # правая граница
+
+population_size = 25 # начальная популяция
+max_epochs = 100 # максимальное число эпох
+max_valueless_epochs = 5 # количество неулучшаемых эпох
+quality_epsilon = 1e-7 # точность улучшения
+
+preserved_part = 2 # 2 особи по умолчанию защищены
+
+selection = roulette # отбираем рулеткой, варианты: random/tournament/roulette/cut
+selection_part = 0.4 # 40% популяции дают потомство
+
+crossbreeding = two_point # режим скрещивания, варианты: one_point/two_point/uniform
+mutation = reverse # метод мутации, варианты: random/swap/reverse
+mutation_probability = 0.2 # вероятность мутации
+
+debug = false # режим отладки

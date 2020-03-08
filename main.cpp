@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include "Config.hpp"
+#include "ConfigParser.hpp"
 #include "Entity.hpp"
 #include "Population.hpp"
 #include "Crossbreeding.hpp"
@@ -15,7 +16,8 @@ double f(double x) {
 }
 
 int main() {
-	Config config = GetDefaultConfig();
+	ConfigParser parser;
+	Config config = parser.Parse("config.txt");
 	PrintConfig(config); // выводим конфигурацию
 
 	int nochangingIterations;
