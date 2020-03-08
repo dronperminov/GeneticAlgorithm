@@ -26,8 +26,12 @@ public:
 	friend std::ostream& operator<<(std::ostream& os, const Entity& entity); // вывод особи
 };
 
-unsigned GetRandom() {
-	return distribution(generator);
+unsigned GetRandom(unsigned maxValue = TwoM) {
+	return distribution(generator) % maxValue;
+}
+
+unsigned GetRandom(unsigned minValue, unsigned maxValue) {
+	return minValue + distribution(generator) % (maxValue - minValue);
 }
 
 // создание особи
