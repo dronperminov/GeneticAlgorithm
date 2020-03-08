@@ -39,20 +39,21 @@ struct Config {
 	size_t preservedPositions; // число сохраняемых особей
 
 	SelectionType selectionType; // тип отбора
-	double selectionPart; // доля отбираемых (только для случайной селекции, турнира и усечения)
+	double selectionPart; // доля отбираемых
+	size_t selectionSize; // количество отбираемых особей
 
 	CrossbreedingType crossbreedingType; // тип скрещивания
 
 	MutationType mutationType; // тип мутации
 	double mutationProbability; // вероятность мутации
 
-	bool debugPopulation; // отладочный режим для популяции
-	bool debugSelection; // отладочный режим для селекции
+	bool debug; // отладочный режим для популяции
 };
 
 void EvalConfig(Config &config) {
 	config.scale = config.mode == "max" ? 1 : -1;
 	config.preservedPositions = (config.preservedPart >= 1 ? config.preservedPart : config.preservedPart * config.populationSize);
+	config.selectionSize = (config.selectionPart >= 1 ? config.selectionPart : config.selectionPart * config.populationSize);
 }
 
 Config GetDefaultConfig() {
@@ -64,22 +65,21 @@ Config GetDefaultConfig() {
 
 	config.populationSize = 40;
 
-	config.maxEpochs = 100;
-	config.maxValuelessEpochs = 15;
-	config.qualityEpsilon = 1e-5;
+	config.maxEpochs = 100; // не более 100 эпох
+	config.maxValuelessEpochs = 5; // не более 5 эпох без улучшения
+	config.qualityEpsilon = 1e-7;
 
-	config.preservedPart = 5;
+	config.preservedPart = 2; // сохраняем две лучших особи
 
-	config.selectionType = SelectionType::Roullete;
-	config.selectionPart = 0.4;
+	config.selectionType = SelectionType::Roullete; // отбираем рулеткой
+	config.selectionPart = 0.4; // 40% дают потомство
 
-	config.crossbreedingType = CrossbreedingType::TwoPoint;
+	config.crossbreedingType = CrossbreedingType::TwoPoint; // двухточечное скрещивание
 
-	config.mutationType = MutationType::Random;
+	config.mutationType = MutationType::Swap; // мутируем перестановкой двух бит
 	config.mutationProbability = 0.2; // 20% мутируют
 
-	config.debugPopulation = false;
-	config.debugSelection = false;
+	config.debug = false; // отключает отладку
 	
 	EvalConfig(config);
 	return config;
@@ -150,9 +150,8 @@ void PrintConfig(Config config) {
 	std::cout << std::endl;
 	std::cout << "selection: ";
 	PrintSelectionType(config.selectionType);
-
-	if (config.selectionType == SelectionType::Tournament || config.selectionType == SelectionType::Cut)
-		std::cout << " (" << config.selectionPart << ")";
+	std::cout << std::endl;
+	std::cout << "selection size: " << config.selectionSize << std::endl;
 	std::cout << std::endl;
 
 	std::cout << "crossbreeding: ";

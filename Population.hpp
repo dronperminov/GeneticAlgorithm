@@ -11,11 +11,13 @@
 class Population {
 	std::vector<Entity> entities; // вектор особей
 
+	void PreserveBestEntities(const Config& config); // сохранение лучших особей
 	std::vector<double> GetFitness(const Config& config); // расчёт фитнес функции в зависимости от оценочной функции
-	size_t RandomSelection(const Config& config); // случайный отбор
-	size_t TournamentSelection(const Config& config); // отбор турниром
-	size_t RoulleteSelection(const Config& config); // отбор рулеткой
-	size_t CutSelection(const Config& config); // отбор усечением
+
+	std::vector<Entity> RandomSelection(const Config& config); // случайный отбор
+	std::vector<Entity> TournamentSelection(const Config& config); // отбор турниром
+	std::vector<Entity> RoulleteSelection(const Config& config); // отбор рулеткой
+	std::vector<Entity> CutSelection(const Config& config); // отбор усечением
 
 public:
 	Population(int populationSize); // создание популяции заданного размера
@@ -24,8 +26,8 @@ public:
 	void Sort(const Config &config); // упорядочивание по возрастанию приспособленности
 	Entity GetBestEntity(const Config& config) const; // получение самой приспособленной особи
 
-	size_t Selection(const Config& config); // отбор
-	void Crossbreeding(const Config &config, size_t parentsCount); // скрещивание
+	void Selection(const Config& config); // отбор
+	void Crossbreeding(const Config &config); // скрещивание
 	void Mutation(const Config &config); // мутация
 
 	friend std::ostream& operator<<(std::ostream& os, const Population& population); // вывод популяции
@@ -66,6 +68,29 @@ Entity Population::GetBestEntity(const Config& config) const {
 	return entities[best]; // возвращаем самую приспособленную особь
 }
 
+// сохранение лучших особей
+void Population::PreserveBestEntities(const Config& config) {
+	// перемещаем в начало лучшие позиции
+	for (size_t i = 0; i < config.preservedPositions; i++) {
+		double bestScore = entities[i].GetScore();
+		size_t bestIndex = i;
+
+		for (size_t j = i + 1; j < config.populationSize; j++) {
+			double score = entities[j].GetScore();
+
+			if ((score - bestScore) * config.scale > 0) {
+				bestScore = score;
+				bestIndex = j;
+			}
+		}
+
+		// переставляем очередную лучшую особь в начало
+		Entity tmp = entities[i];
+		entities[i] = entities[bestIndex];
+		entities[bestIndex] = tmp;
+	}
+}
+
 // расчёт фитнес функции в зависимости от оценочной функции
 std::vector<double> Population::GetFitness(const Config& config) {
 	std::vector<double> fitness(config.populationSize);
@@ -98,76 +123,41 @@ std::vector<double> Population::GetFitness(const Config& config) {
 }
 
 // случайный отбор
-size_t Population::RandomSelection(const Config& config) {
-	if (config.debugSelection)
-		std::cout << "random selection: " << std::endl;
-
-	size_t parentsCount = config.populationSize * config.selectionPart;
+std::vector<Entity> Population::RandomSelection(const Config& config) {
 	std::vector<Entity> parents;
 
-	for (size_t i = config.preservedPositions; i < parentsCount; i++) {
+	for (size_t i = config.preservedPositions; i < config.selectionSize; i++) {
 		size_t index = GetRandom(config.populationSize);
-
-		if (config.debugSelection)
-			std::cout << "Select " << (index + 1) << " entity: " << entities[index].GetScore() << std::endl;
-
 		parents.push_back(entities[index]);
 	}
 
-	// помещаем родителей в начало
-	for (size_t i = config.preservedPositions; i < parentsCount; i++)
-		entities[i] = parents[i];
-
-	return parentsCount;
+	return parents;
 }
 
 // отбор турниром
-size_t Population::TournamentSelection(const Config& config) {
-	if (config.debugSelection)
-		std::cout << "tournament selection: " << std::endl;
-
-	size_t parentsCount = config.populationSize * config.selectionPart;
+std::vector<Entity> Population::TournamentSelection(const Config& config) {
 	std::vector<Entity> parents;
 
-	for (size_t i = 0; i < parentsCount; i++) {
+	for (size_t i = config.preservedPositions; i < config.selectionSize; i++) {
 		size_t index1 = GetRandom(config.populationSize);
 		size_t index2 = GetRandom(config.populationSize);
 
 		double score1 = entities[index1].GetScore();
 		double score2 = entities[index2].GetScore();
 
-		if (config.debugSelection)
-			std::cout << "Tournament " << (i + 1) << ". " << score1 << " vs " << score2 << ", winner: ";
-		
 		if ((score1 - score2) * config.scale > 0) {
 			parents.push_back(entities[index1]);
-			
-			if (config.debugSelection)
-				std::cout << " first" << std::endl;
 		}
 		else {
 			parents.push_back(entities[index2]);
-
-			if (config.debugSelection)
-				std::cout << " second" << std::endl;
 		}
 	}
 
-	// помещаем родителей в начало
-	for (size_t i = config.preservedPositions; i < parentsCount; i++)
-		entities[i] = parents[i];
-
-	return parentsCount;
+	return parents;
 }
 
 // отбор рулеткой
-size_t Population::RoulleteSelection(const Config& config) {
-	if (config.debugSelection)
-		std::cout << "Roullete selection: " << std::endl;
-
-	size_t parentsCount = config.populationSize * config.selectionPart;
-	std::vector<Entity> parents;
-
+std::vector<Entity> Population::RoulleteSelection(const Config& config) {
 	std::vector<double> fitness = GetFitness(config);
 	double sum = 0;
 
@@ -175,8 +165,10 @@ size_t Population::RoulleteSelection(const Config& config) {
 	for (size_t i = 0; i < config.populationSize; i++)
 		sum += fitness[i];
 	
+	std::vector<Entity> parents;
+
 	// отбираем подходящие особи
-	for (size_t i = 0; i < parentsCount; i++) {
+	for (size_t i = config.preservedPositions; i < config.selectionSize; i++) {
 		double rnd = GetRandom();
 		double pi = 0;
 		size_t j = 0;
@@ -186,47 +178,53 @@ size_t Population::RoulleteSelection(const Config& config) {
 			j++;
 		}
 
-		if (config.debugSelection)
-			std::cout << " (selected " << j << "), probability: " << (fitness[j] / sum) << std::endl;
-
 		parents.push_back(entities[j]);
 	}
 
-	// помещаем родителей в начало
-	for (size_t i = config.preservedPositions; i < parentsCount; i++)
-		entities[i] = parents[i];
-
-	return parentsCount;
+	return parents;
 }
 
 // отбор усечением
-size_t Population::CutSelection(const Config& config) {
+std::vector<Entity> Population::CutSelection(const Config& config) {
 	Sort(config);
-	return config.populationSize * config.selectionPart;
+	std::vector<Entity> parents;
+
+	for (size_t i = config.preservedPositions; i < config.selectionSize; i++)
+		parents.push_back(entities[i]);
+
+	return parents;
 }
 
 // отбор
-size_t Population::Selection(const Config& config) {
-	if (config.selectionType == SelectionType::Random)
-		return RandomSelection(config);
+void Population::Selection(const Config& config) {
+	PreserveBestEntities(config); // защищаем лучшие особи
+	std::vector<Entity> parents;
 
-	if (config.selectionType == SelectionType::Tournament)
-		return TournamentSelection(config);
+	if (config.selectionType == SelectionType::Random) {
+		parents = RandomSelection(config);
+	}
+	else if (config.selectionType == SelectionType::Tournament) {
+		parents = TournamentSelection(config);
+	}
+	else if (config.selectionType == SelectionType::Roullete) {
+		parents = RoulleteSelection(config);
+	}
+	else if (config.selectionType == SelectionType::Cut) {
+		parents = CutSelection(config);
+	} else {
+		throw std::runtime_error("unhandled SelectionType");
+	}
 
-	if (config.selectionType == SelectionType::Roullete)
-		return RoulleteSelection(config);
-
-	if (config.selectionType == SelectionType::Cut)
-		return CutSelection(config);
-
-	throw std::runtime_error("unhandled SelectionType");
+	// копируем выбранные особи после защищённых
+	for (size_t i = config.preservedPositions; i < config.selectionSize; i++)
+		entities[i] = parents[i - config.preservedPositions];
 }
 
 // скрещивание
-void Population::Crossbreeding(const Config &config, size_t parentsCount) {
-	for (size_t i = parentsCount; i < config.populationSize; i++) {
-		int parent1 = GetRandom(parentsCount); // выбираем первого родителя
-		int parent2 = GetRandom(parentsCount); // выбираем второго родителя
+void Population::Crossbreeding(const Config &config) {
+	for (size_t i = config.selectionSize; i < config.populationSize; i++) {
+		int parent1 = GetRandom(config.selectionSize); // выбираем первого родителя
+		int parent2 = GetRandom(config.selectionSize); // выбираем второго родителя
 
 		entities[i] = Crossbreed(entities[parent1], entities[parent2], config.crossbreedingType); // выполняем скрещивание
 	}

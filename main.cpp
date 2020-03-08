@@ -25,13 +25,12 @@ int main() {
 
 	for (size_t epoch = 0; epoch < config.maxEpochs; epoch++) {
 		population.Eval(config, f); // оцениваем популяцию
-		population.Sort(config);
 		Entity bestEntity = population.GetBestEntity(config); // получаем лучшую особь
 
 		double x = bestEntity.Eval(config.leftBorder, config.rightBorder);
-		cout << "Epoch " << epoch << "\tbest entity: f(x) = " << f(x) << ", where x = " << x << endl;
+		cout << "Epoch " << epoch << "\tbest: f(x) = " << f(x) << ", where x = " << x << endl;
 
-		if (config.debugPopulation) {
+		if (config.debug) {
 			cout << population; // выводим текущую популяцию
 			cout << endl;
 		}
@@ -56,12 +55,8 @@ int main() {
 
 		prevBest = currBest; // обновляем предыдущее лучшее значение
 
-		size_t count = population.Selection(config); // запускаем селекцию
-
-		if (config.debugSelection)
-			cout << "Selected " << count << " parents" << endl;
-
-		population.Crossbreeding(config, count); // запускаем скрещивание
+		population.Selection(config); // запускаем селекцию
+		population.Crossbreeding(config); // запускаем скрещивание
 		population.Mutation(config); // запускаем мутацию
 	}
 }
