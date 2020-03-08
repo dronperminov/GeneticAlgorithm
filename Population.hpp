@@ -11,6 +11,7 @@
 class Population {
 	std::vector<Entity> entities; // вектор особей
 
+	size_t RandomSelection(const Config& config); // случайный отбор
 	size_t TournamentSelection(const Config& config); // отбор турниром
 	size_t RoulleteSelection(const Config& config); // отбор рулеткой
 	size_t CutSelection(const Config& config); // отбор усечением
@@ -62,6 +63,30 @@ Entity Population::GetBestEntity(const Config& config) const {
 			best = i;
 
 	return entities[best]; // возвращаем самую приспособленную особь
+}
+
+// случайный отбор
+size_t Population::RandomSelection(const Config& config) {
+	if (config.debugSelection)
+		std::cout << "random selection: " << std::endl;
+
+	size_t parentsCount = config.populationSize * config.selectionPart;
+	std::vector<Entity> parents;
+
+	for (size_t i = config.preservedPositions; i < parentsCount; i++) {
+		size_t index = GetRandom(config.populationSize);
+
+		if (config.debugSelection)
+			std::cout << "Select " << (index + 1) << " entity: " << entities[index].GetScore() << std::endl;
+
+		parents.push_back(entities[index]);
+	}
+
+	// помещаем родителей в начало
+	for (size_t i = config.preservedPositions; i < parentsCount; i++)
+		entities[i] = parents[i];
+
+	return parentsCount;
 }
 
 // отбор турниром
@@ -159,6 +184,9 @@ size_t Population::CutSelection(const Config& config) {
 
 // отбор
 size_t Population::Selection(const Config& config) {
+	if (config.selectionType == SelectionType::Random)
+		return RandomSelection(config);
+
 	if (config.selectionType == SelectionType::Tournament)
 		return TournamentSelection(config);
 

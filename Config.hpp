@@ -4,6 +4,7 @@
 #include <string>
 
 enum class SelectionType {
+	Random, // случайная селекция
 	Tournament, // турнир
 	Roullete, // метод релетки
 	Cut // метод усечения
@@ -38,7 +39,7 @@ struct Config {
 	size_t preservedPositions; // число сохраняемых особей
 
 	SelectionType selectionType; // тип отбора
-	double selectionPart; // доля отбираемых (только для турнира и усечения)
+	double selectionPart; // доля отбираемых (только для случайной селекции, турнира и усечения)
 
 	CrossbreedingType crossbreedingType; // тип скрещивания
 
@@ -86,6 +87,10 @@ Config GetDefaultConfig() {
 
 void PrintSelectionType(SelectionType type) {
 	switch (type) {
+		case SelectionType::Random:
+			std::cout << "random";
+			break;
+
 		case SelectionType::Tournament:
 			std::cout << "tournament";
 			break;
