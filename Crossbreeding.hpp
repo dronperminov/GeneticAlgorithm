@@ -1,13 +1,8 @@
 #pragma once
 
 #include <iostream>
+#include "Config.hpp"
 #include "Entity.hpp"
-
-enum class CrossbreedingType {
-	OnePoint, // одноточечное
-	TwoPoint, // двухточечное
-	Uniform // однородное
-};
 
 // одноточечное скрещивание
 Entity OnePointCrossbreed(const Entity &entity1, const Entity &entity2) {

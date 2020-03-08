@@ -1,14 +1,8 @@
 #pragma once
 
 #include <iostream>
+#include "Config.hpp"
 #include "Entity.hpp"
-
-// тип мутации
-enum class MutationType {
-	Random, // изменение случайного бита
-	Swap, // перестановка пары случайных битов
-	Reverse // реверс части битов
-};
 
 // случайная мутация
 void RandomMutation(Entity &entity) {

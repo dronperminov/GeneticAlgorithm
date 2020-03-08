@@ -19,6 +19,7 @@ public:
 
 	double Eval(double a, double b) const; // получение численного значения особи
 	void Score(double (*f)(double), double a, double b); // оценка приспособленности
+	double GetScore() const; // получение оценки приспособленности
 
 	void InverseBit(int index); // инверсия бита по индексу
 	bool GetBit(int index) const; // получение бита по индексу
@@ -54,6 +55,11 @@ double Entity::Eval(double a, double b) const {
 void Entity::Score(double (*f)(double), double a, double b) {
 	double x = Eval(a, b); // получаем вещественное представление особи
 	score = f(x); // вычисляем значение функции
+}
+
+// получение оценки приспособленности
+double Entity::GetScore() const {
+	return score;
 }
 
 // инверсия бита по индексу

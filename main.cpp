@@ -1,26 +1,67 @@
 #include <iostream>
+#include <cmath>
+
+#include "Config.hpp"
 #include "Entity.hpp"
+#include "Population.hpp"
 #include "Crossbreeding.hpp"
 #include "Mutation.hpp"
 
 using namespace std;
 
-int main() {
-	Entity entity;
-	cout << entity << endl;
-	Mutate(entity, MutationType::Random);
-	cout << entity << endl;
-	Mutate(entity, MutationType::Swap);
-	cout << entity << endl;
-	Mutate(entity, MutationType::Reverse);
-	cout << entity << endl;
+// оптимизируемая функция
+double f(double x) {
+	return x * sin(x + 5) * cos(x - 6) * sin(x + 7) * cos(x - 8) * sin(x / 3);
+}
 
-	cout << endl;
-	Entity entity1;
-	Entity entity2;
-	cout << " parent 1: " << entity1 << endl;
-	cout << " parent 2: " << entity2 << endl;
-	cout << "one point: " << Crossbreed(entity1, entity2, CrossbreedingType::OnePoint) << endl;
-	cout << "two point: " << Crossbreed(entity1, entity2, CrossbreedingType::TwoPoint) << endl;
-	cout << "  uniform: " << Crossbreed(entity1, entity2, CrossbreedingType::Uniform) << endl;
+int main() {
+	Config config = GetDefaultConfig();
+	PrintConfig(config); // выводим конфигурацию
+
+	int nochangingIterations;
+	double prevBest;
+
+	Population population(config.populationSize); // создаём популяцию
+
+	for (size_t epoch = 0; epoch < config.maxEpochs; epoch++) {
+		population.Eval(config, f); // оцениваем популяцию
+		population.Sort(config);
+		Entity bestEntity = population.GetBestEntity(config); // получаем лучшую особь
+
+		double x = bestEntity.Eval(config.leftBorder, config.rightBorder);
+		cout << "Epoch " << epoch << "\tbest entity: f(x) = " << f(x) << ", where x = " << x << endl;
+
+		if (config.debugPopulation) {
+			cout << population; // выводим текущую популяцию
+			cout << endl;
+		}
+
+		double currBest = bestEntity.GetScore(); // получаем оценку приспособленности
+
+		// если не нулевая эпоха и значение изменилось недостаточно сильно
+		if (epoch > 0 && (fabs(prevBest - currBest) < config.qualityEpsilon)) {
+			nochangingIterations++; // увеличиваем счётчик эпох без изменений
+
+			// если превышен лимит без изменений
+			if (nochangingIterations >= config.maxValuelessEpochs) {
+				cout << "Score has not improved over " << nochangingIterations << " epoches" << endl; // сообщаем об этом
+				break; // и выходим
+			}
+
+			cout << "Score has not improved, (iteration: " << nochangingIterations << ")" << endl;
+		}
+		else {
+			nochangingIterations = 0;
+		}
+
+		prevBest = currBest; // обновляем предыдущее лучшее значение
+
+		size_t count = population.Selection(config); // запускаем селекцию
+
+		if (config.debugSelection)
+			cout << "Selected " << count << " parents" << endl;
+
+		population.Crossbreeding(config, count); // запускаем скрещивание
+		population.Mutation(config); // запускаем мутацию
+	}
 }
